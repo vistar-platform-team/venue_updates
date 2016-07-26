@@ -25,15 +25,18 @@ The script uses the python requests module. To install it, run this:
 `$ pip3 install requests`
 
 
-
-
 #Running the Script
+
+You run the script in your terminal. You need to be in the same directory as the script in order to run it. Steps below:
+
 1. Edit bulk upload template
 2. Save template in same folder as script and supplemental file
 3. Edit supplemental file if needed (set the url and email and password)
 4. Run:
  `$ python3 programmatic_venue_update.py update_venue_template.csv"`
      ---> You can create an alias in your user profile to shorten this
+
+
 
 #Notes:
 - To minimize work, the user only has to fill in the values in the template that they want changed. If they don't want to change the latitude, for example, they just have to leave it blank.

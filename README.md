@@ -11,14 +11,17 @@ The easiest way to install python3 is with Homebrew. If you have Homebrew alread
 
 #### 1. Install Homebrew
 If you don't have homebrew installed, run this to install it:
+
 `$ /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"`
 
 #### 2. Install Python3
 Once you have homebrew, run this to install python3:
+
 `$ brew install python3`
 
 #### 3. Install requests Module
 The script uses the python requests module. To install it, run this:
+
 `$ pip3 install requests`
 
 

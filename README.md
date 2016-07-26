@@ -4,14 +4,32 @@
 - The bulk upload template (update_venue_template.csv)
 
 #Sys requirement shit:
-- Python 3 
-- Python module "requests" (I think this comes default with Python3 though)
 
-#User workflow:
+If you have a mac, you probably have python2 installed. This script uses python3. 
+
+The easiest way to install python3 is with Homebrew. If you have Homebrew already, skip down to step 2.
+
+#### 1. Install Homebrew
+If you don't have homebrew installed, run this to install it:
+`$ /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"`
+
+#### 2. Install Python3
+Once you have homebrew, run this to install python3:
+`$ brew install python3`
+
+#### 3. Install requests Module
+The script uses the python requests module. To install it, run this:
+`$ pip3 install requests`
+
+
+
+
+#Running the Script
 1. Edit bulk upload template
 2. Save template in same folder as script and supplemental file
-3. Edit supplemental file if needed
-4. Run "python3 programmatic_venue_update.py update_venue_template.csv" on the c-line
+3. Edit supplemental file if needed (set the url and email and password)
+4. Run:
+ `$ python3 programmatic_venue_update.py update_venue_template.csv"`
      ---> You can create an alias in your user profile to shorten this
 
 #Notes:
@@ -20,3 +38,9 @@
 - The script will display the venue names that the user wants to edit before submitting the changes, to allow exiting in case of user-error
 - Commas should be avoided when inputting number values
 - Columns A and B (Network name and PARTNER vendor ID of venue) and required inputs in the template.
+
+
+
+
+
+

@@ -11,7 +11,6 @@ def main(bulk_template):
 		r = requests.put(options['url']+'/venue/',cookies=cookies,data=json.dumps([d],separators=(',', ':')))
 		print('\nEditing venue {0}...\n'.format(d['partner_venue_id']))
 		print('HTTP response: {0}\n'.format(r.status_code)) 
-		sleep(0.5)
 
 def is_a_number(value):
 	if value.isdigit() == True:

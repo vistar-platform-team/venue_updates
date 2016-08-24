@@ -1,4 +1,4 @@
-network name,partner_venue_id,venue name,gvt,gvt_seconds,dwell_time,cpm_floor_cents,latitude,longitude,street_address,city,state,zip_code,venue_type
-Programmatic Venue Test,TEST_TEST,Eric 7,,50000,,1000,,,,,,,
-Programmatic Venue Test,DAB_BCLCD,Eric 8,,,,1000,,,,,,,
-Programmatic Venue Test,SFO_T3LED,Eric 9,,,,1000,,,,,,,
+network name,partner_venue_id,venue name,gvt,gvt_seconds,dwell_time,cpm_floor_cents,latitude,longitude,street_address,city,state,zip_code,venue_type,tab_panel_id
+REQUIRED,REQUIRED,,,,,,,,,,,,,
+REQUIRED,REQUIRED,,,,,,,,,,,,,
+REQUIRED,REQUIRED,,,,,,,,,,,,,

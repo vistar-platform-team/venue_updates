@@ -1,4 +1,4 @@
-# from IPython import embed
+from IPython import embed
 from suppl import options
 from time import sleep
 import sys,csv,json,requests
@@ -72,13 +72,30 @@ def get_editable_values(list_b,all_venues):
 				row.insert(i+9,all_venues[row[-1]]['address'][list_b[0][i+9]])
 	return list_b,all_venues
 
+def create_unfound_venues(unfound):
+	with open('unfound_venues.csv','w',newline='') as csvfile:
+	    new_file = csv.writer(csvfile, delimiter=',')
+	    for f in unfound:
+		    new_file.writerow(f)
+
 def user_prompt(list_b,all_venues):
 	print('You will be editing the following venues:\n')
 	sleep(0.5)
+	unfound = []
+	counter = 1
+	for row in list_b[1:]:
+			try:
+				row[16]
+			except:
+				print('Venue with partner ID {0} not found in system; adding to list of unfound venues.'.format(row[1]))
+				unfound.append(row)
+				list_b.remove(row)
 	for row in list_b[1:]:
 		for venue in all_venues:  
 			if venue['network_id'] == row[15] and venue['id'] == row[16]:
-				print(venue['name'])
+				print(counter, venue['name'])
+				counter += 1
+	create_unfound_venues(unfound)
 	print('\nTo proceed, type "y". To exit, type anything else.')
 	response = input().lower()
 	if response == 'y':

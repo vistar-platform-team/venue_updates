@@ -1,7 +1,7 @@
 #3 components:
-- The actual script (programmatic_venue_update.py)
+- The actual script (venue_create_edit.py)
 - The supplemental file, for log-ins and staging vs. prod URLs (suppl.py)
-- The bulk upload template (update_venue_template.csv)
+- The bulk upload template (template.csv)
 
 #Sys requirement shit:
 
@@ -33,17 +33,20 @@ You run the script in your terminal. You need to be in the same directory as the
 2. Save template in same folder as script and supplemental file
 3. Edit supplemental file if needed (set the url and email and password)
 4. Run:
- `$ python3 programmatic_venue_update.py update_venue_template.csv"`
-     ---> You can create an alias in your user profile to shorten this
-
+ `$ python3 venue_create_edit.py e template.csv"`
+     ---> This runs an EDIT (aka UPDATE) job
+    or:
+`$ python3 venue_create_edit.py c template.csv"`
+     ---> This runs a CREATION job
 
 
 #Notes:
-- To minimize work, the user only has to fill in the values in the template that they want changed. If they don't want to change the latitude, for example, they just have to leave it blank.
-- During my testing, an HTTP response of 400 was almost always caused by incorrect venue type. It'll be up to Katie and Christian to type in the correct format of the venues. (Subways example that we discussed)
-- The script will display the venue names that the user wants to edit before submitting the changes, to allow exiting in case of user-error
+- For editing: To minimize work, the user only has to fill in the values in the template that they want changed. If they don't want to change the latitude, for example, they just have to leave it blank.
+- Common causes of a 400 error: Incorrectly formatted venue; typos; unknown adjustments to the API made by devs
+- For editing: The script will display the venue names that the user wants to edit before submitting the changes, to allow exiting in case of user-error
+- For editing: If you attempt to edit a venue that is not yet in the system, this script will ignore it. After script has ran, it will output a .csv of venues that could not be updated.
 - Commas should be avoided when inputting number values
-- Columns A and B (Network name and PARTNER vendor ID of venue) and required inputs in the template.
+- Columns A and B (Network ID and PARTNER vendor ID of venue) and required inputs in the template.
 
 
 

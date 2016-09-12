@@ -1,4 +1,0 @@
-network name,partner_venue_id,venue name,gvt,gvt_seconds,dwell_time,cpm_floor_cents,latitude,longitude,street_address,city,state,zip_code,venue_type,tab_panel_id
-REQUIRED,REQUIRED,,,,,,,,,,,,,
-REQUIRED,REQUIRED,,,,,,,,,,,,,
-REQUIRED,REQUIRED,,,,,,,,,,,,,

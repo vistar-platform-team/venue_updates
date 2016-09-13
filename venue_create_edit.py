@@ -32,6 +32,17 @@ def unstringify_ints(venue):
 	Numerical values in venue dictionary have to be correctly formatted
 	into integers in order for data to push.
 	'''
+
+
+
+
+	'''
+
+
+NAME AS NUMBER
+
+
+	'''
 	def _is_a_number(value):
 		if value.isdigit() == True:
 			return [True,int(value)]
@@ -43,7 +54,7 @@ def unstringify_ints(venue):
 				return [False]
 
 	for k in list(venue.keys()): 
-		if k == 'tab_panel_id' or k == 'partner_venue_id': 
+		if k == 'tab_panel_id' or k == 'partner_venue_id' or k == 'name': 
 			continue
 		if type(venue[k]) == str:
 			if _is_a_number(venue[k])[0] == True:

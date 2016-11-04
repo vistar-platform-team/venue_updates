@@ -2,8 +2,7 @@
 from suppl import options
 from time import sleep
 import sys,csv,json,requests,argparse,collections
-
-#USAGE:$ python3 programmatic_venue_update.py e template.csv
+import dateutil.parser as parser
 
 def push_data(venues_to_push,cookies,job_type):
 	'''
@@ -12,7 +11,7 @@ def push_data(venues_to_push,cookies,job_type):
 	'''
 	def status(r,venue):
 		if r.status_code == 200:
-			print('Successful! HTTP response: {0}\n'.format(r.status_code)) 
+			print('Successful! HTTP response: {0}\n'.format(r.status_code))
 		else:
 			print('Error occurred for venue {0}, HTTP response {1}\n'.format(venue['name'],r.status_code))
 
@@ -26,6 +25,16 @@ def push_data(venues_to_push,cookies,job_type):
 			print('\nEditing venue {0}...\n'.format(v['name']))
 			r = requests.put(options['url']+'/venue/',cookies=cookies,data=json.dumps([v],separators=(',', ':')))
 			status(r,v)
+
+def convert_date(string_date):
+	'''
+	Converts date into ISO 8601 standard and specifies time to address GMT.
+	'''
+	string_date = string_date + ' 05:00:00+00:00'
+	parsed_date = (parser.parse(string_date))
+	iso_date = parsed_date.isoformat()
+
+	return iso_date
 
 def unstringify_ints(venue):
 	'''
@@ -51,6 +60,20 @@ def unstringify_ints(venue):
 				
 	return venue
 
+def final_formatting(venue_dict):
+	'''
+	Clean up data so that it is push-able. Namely, unstringify and
+	address activation_date stuff.
+	'''
+	venue_dict = unstringify_ints(venue_dict)
+	if venue_dict['activation_date'] != None:
+		if venue_dict['activation_date'] != '':
+			venue_dict['activation_date'] = convert_date(venue_dict['activation_date'])
+		elif venue_dict['activation_date'] == '':
+			venue_dict['activation_date'] = None
+
+	return venue_dict
+
 def create_unfound_venues(unfound):
 	with open('unfound_venues.csv','w',newline='') as csvfile:
 	    new_file = csv.writer(csvfile, delimiter=',')
@@ -70,7 +93,7 @@ def edit_check(list_v,all_venues):
 
 	for row in list_v[1:]:
 		try:
-			row[14]
+			row[15]
 		except:
 			print('Venue with partner ID {0} not found in system; '
 				'adding to list of uneditable venues.'.format(row[1]))
@@ -83,10 +106,10 @@ def edit_check(list_v,all_venues):
 
 	for row in list_v[1:]: 
 		for venue in all_venues:  
-			if venue['network_id'] == row[0] and venue['id'] == row[14]:
+			if venue['network_id'] == row[0] and venue['id'] == row[15]:
 				print('{0} You will be editing {1}'.format(counter+1,venue['name']))
 				venues_to_edit.append(venue) 
-				row.pop(15) #replace all_venues idx w/ venues_to_edit idx
+				row.pop(16) #replace all_venues idx w/ venues_to_edit idx
 				row.append(counter)
 				counter += 1
 
@@ -131,8 +154,8 @@ def get_ids(list_v,cookies,job_type):
 	for row in list_v[1:]: 
 		for i,v in enumerate(all_venues): 
 			if v['network_id'] == row[0] and v['partner_venue_id'].lower().replace(' ','') == row[1].lower().replace(' ',''):
-				row.append(v['id']) # venue ID --> cell 14
-				row.append(i) # index of venue in all_venues --> cell 15
+				row.append(v['id']) # venue ID --> cell 15
+				row.append(i) # index of venue in all_venues --> cell 16
 
 	return list_v,all_venues
 
@@ -149,13 +172,13 @@ def create_venues(list_v,cookies,job_type):
 	list_of_dicts = []
 
 	for row in list_v[1:]:
-		pairs = dict(zip(headers[0:11],row[0:11]))
-		address = dict(zip(headers[11:14],row[11:14]))
+		pairs = dict(zip(headers[0:12],row[0:12]))
+		address = dict(zip(headers[12:15],row[12:15]))
 		pairs['address'] = address
 		pairs['targetings'] = {}
 		try:
-			pairs['id'] = row[14]
-			list_of_dicts.append([pairs,row[15]])
+			pairs['id'] = row[15]
+			list_of_dicts.append([pairs,row[16]])
 		except:
 			list_of_dicts.append(pairs)
 
@@ -171,7 +194,7 @@ def create_venues(list_v,cookies,job_type):
 				d.pop('tab_panel_id')
 		
 	for d in list_of_dicts:
-		d = unstringify_ints(d)
+		d = final_formatting(d)
 
 	return list_of_dicts
 
@@ -191,7 +214,9 @@ def read(bulk_template):
 
 def cli():
 	'''
-	USAGE:$ python3 programmatic_venue_update.py e template.csv
+	USAGE:$ python3 venue_create_edit.py e template.csv
+
+						OR c   ----------^
 	'''
 	parser = argparse.ArgumentParser(description="This script creates or edits venues in bulk.")
 	parser.add_argument('job',choices=['c','C','e','E'],type=str,default=None)

@@ -47,7 +47,7 @@ You run the script in your terminal. You need to be in the same directory as the
 - For editing: If you attempt to edit a venue that is not yet in the system, this script will ignore it. After script has ran, it will output a .csv of venues that could not be updated.
 - Commas should be avoided when inputting number values
 - Columns A and B (Network ID and PARTNER vendor ID of venue) and required inputs in the template.
-
+- When entering an activation date, any format should be fine; when in doubt, just use whatever format Excel defaults to.
 
 
 

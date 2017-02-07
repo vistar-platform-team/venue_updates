@@ -1,242 +1,165 @@
 # from IPython import embed
 from suppl import options
 from time import sleep
-import sys,csv,json,requests,argparse,collections
-import dateutil.parser as parser
+import sys,csv,json,requests,argparse
+import pandas as pd
 
-def push_data(venues_to_push,cookies,job_type):
-	'''
-	Takes list of venue dictionaries and iterates thru each one, 
-	pushing edits or creations into the system via API.
-	'''
-	def status(r,venue):
-		if r.status_code == 200:
-			print('Successful! HTTP response: {0}\n'.format(r.status_code))
-		else:
-			print('Error occurred for venue {0}, HTTP response {1}\n'.format(venue['name'],r.status_code))
+#USAGE: $ python3 venue_create_edit.py e template.csv
+# OR    $ python3 venue_create_edit.py c template.csv
 
-	if job_type == 'c':
-		for v in venues_to_push:
-			print('\nCreating venue {0}...\n'.format(v['name']))
-			r = requests.post(options['url']+'/venue/',cookies=cookies,data=json.dumps([v],separators=(',', ':')))
-			status(r,v)
-	elif job_type == 'e':
-		for v in venues_to_push:		
-			print('\nEditing venue {0}...\n'.format(v['name']))
-			r = requests.put(options['url']+'/venue/',cookies=cookies,data=json.dumps([v],separators=(',', ':')))
-			status(r,v)
+def push_data(venues,cookies,job_type):
+    job = 'Creating' if job_type.lower() == 'c' else 'Editing'
+    
+    for v in venues:
+        if 'tab_panel_id' in v.keys():
+            if v['tab_panel_id'] == '':
+                v.pop('tab_panel_id')
 
-def convert_date(string_date):
-	'''
-	Converts date into ISO 8601 standard and specifies time to address GMT.
-	'''
-	string_date = string_date + ' 05:00:00+00:00'
-	parsed_date = (parser.parse(string_date))
-	iso_date = parsed_date.isoformat()
+        print('\n{0} venue {1}...\n'.format(job,v['name']))
 
-	return iso_date
+        r = requests.post(options['url']+'/venue/',cookies=cookies,data=json.dumps([v])) \
+            if job_type.lower() == 'c' else requests.put(options['url']+'/venue/',\
+                cookies=cookies,data=json.dumps([v]))
 
-def unstringify_ints(venue):
-	'''
-	Numerical values in venue dictionary have to be correctly formatted
-	into integers in order for data to push.
-	'''
-	def _is_a_number(value):
-		if value.isdigit() == True:
-			return [True,int(value)]
-		else:
-			try:
-				float(value)
-				return [True,float(value)]
-			except:
-				return [False]
+        if r.status_code == 200:
+            print('Successful! HTTP response: {0}\n'.format(r.status_code)) 
+        else:
+            print('Error occurred for venue {0}, HTTP response {1}\n'.format(v['name'],r.status_code))
 
-	for k in list(venue.keys()): 
-		if k == 'tab_panel_id' or k == 'partner_venue_id' or k == 'name': 
-			continue
-		if type(venue[k]) == str:
-			if _is_a_number(venue[k])[0] == True:
-				venue[k] = _is_a_number(venue[k])[1]
-				
-	return venue
+def job_check(venues):
+    for venue in venues:
+        print(venue['name'],'\n')
 
-def final_formatting(venue_dict):
-	'''
-	Clean up data so that it is push-able. Namely, unstringify and
-	address activation_date stuff.
-	'''
-	venue_dict = unstringify_ints(venue_dict)
-	if venue_dict['activation_date'] != None:
-		if venue_dict['activation_date'] != '':
-			venue_dict['activation_date'] = convert_date(venue_dict['activation_date'])
-		elif venue_dict['activation_date'] == '':
-			venue_dict['activation_date'] = None
+    print('\nTo proceed, type "y". To exit, type anything else.')
+    response = input().lower()
 
-	return venue_dict
+    if response == 'y':
+        pass
+    else:
+        sys.exit()
 
-def create_unfound_venues(unfound):
-	with open('unfound_venues.csv','w',newline='') as csvfile:
-	    new_file = csv.writer(csvfile, delimiter=',')
-	    for f in unfound:
-		    new_file.writerow(f)
+def create_unfound_venues(venues,system_venues):
+    unfound = []
 
-def edit_check(list_v,all_venues):
-	'''
-	For editing: if a venue did not have a venue ID saved from get_ids, 
-	it gets flagged, is removed from list, and is saved in a csv output of 
-	"unfound" venues. Remaining venues are printed on screen.
+    for venue,item in zip(venues,system_venues):
+        if type(item) == int:
+            system_venues.remove(item)
+            unfound.append(venues.pop(venues.index(venue)))
 
-	all_venues is then altered so that it only contains the venues being
-	edited.
-	'''
-	unfound = []
+    if unfound != []:
+        for v in unfound:
+            print('Venue with partner ID {0} not found in system; adding '
+                    'to list of uneditable venues.'.format(v['partner_venue_id']))
 
-	for row in list_v[1:]:
-		try:
-			row[15]
-		except:
-			print('Venue with partner ID {0} not found in system; '
-				'adding to list of uneditable venues.'.format(row[1]))
-			unfound.append(row)
-			list_v.remove(row)
+        with open('unfound_venues.csv','w',newline='') as csvfile:
+            new_file = csv.writer(csvfile, delimiter=',')
+            for p_v_i in [f['partner_venue_id'] for f in unfound]:
+                new_file.writerow([p_v_i])
+    
+    return venues,system_venues
 
-	create_unfound_venues(unfound)
-	venues_to_edit = []
-	counter = 0	
+def get_vals_fr_vistar(venues,system_venues):
+    venues,system_venues = create_unfound_venues(venues,system_venues)
 
-	for row in list_v[1:]: 
-		for venue in all_venues:  
-			if venue['network_id'] == row[0] and venue['id'] == row[15]:
-				print('{0} You will be editing {1}'.format(counter+1,venue['name']))
-				venues_to_edit.append(venue) 
-				row.pop(16) #replace all_venues idx w/ venues_to_edit idx
-				row.append(counter)
-				counter += 1
+    for venue,sys_venue in zip(venues,system_venues):
+        for key in sys_venue.keys():
+            try:
+                if venue[key] == '':
+                    venue[key] = sys_venue[key]
+            except:
+                venue[key] = sys_venue[key]
 
-	print('\nTo proceed, type "y". To exit, type anything else.')
-	response = input().lower()
+    for venue,sys_venue in zip(venues,system_venues):
+        for key in sys_venue['address'].keys():
+            try:
+                if venue['address'][key] == '':
+                    venue['address'][key] = sys_venue['address'][key]
+            except:
+                venue['address'][key] = sys_venue['address'][key]
+    
+    return venues
 
-	if response == 'y':
-		return list_v,venues_to_edit
-	else:
-		sys.exit()
+def get_system_venues(venues,cookies):
+    all_venues = requests.get(options['url']+'/venue',cookies=cookies).json()
+    system_venues = []
+    
+    for i,venue in enumerate(venues):
+        for v in all_venues:
+            if venue['network_id'] == v['network_id'] and \
+                str(venue['partner_venue_id']) == str(v['partner_venue_id']):
+                system_venues.append(v)
+        if len(system_venues) < i+1:
+            system_venues.append(i) #Creates int. placeholder for unfound venues
 
-def get_vals_fr_vistar(venue,idx,all_venues):
-	'''
-	For editing: runs through each value in the venue dictionary and
-	looks for blanks. If blank, retrieve the value that is stored in 
-	the system.
-	'''
-	if venue['tab_panel_id'] == '':
-		venue.pop('tab_panel_id')
+    return system_venues
 
-	for k in list(venue.keys()):
-		if venue[k] == '':
-			venue[k] = all_venues[idx][k]
-	
-	for k in list(venue['address'].keys()):
-		if venue['address'][k] == '':
-			venue['address'][k] = all_venues[idx]['address'][k]
+def add_creation_properties(venues):
+    for venue in venues:
+        venue['targetings'] = {}
+        venue['activation_date'] = None
+        
+        if venue['address']['city'] == '':
+            venue['address']['city'] = None
+        
+        venue['address']['state'] = None
+        venue['address']['zip_code'] = None
 
-	venue['action'] = None
-	venue['impressions_30_sec'] = all_venues[idx]['impressions_30_sec']
-	venue['targetings'] = all_venues[idx]['targetings']
+    return venues
 
-	return venue
+def create_venues(list_template,job_type):
+    venues = []
+    for i in list_template.index:
+        venue = {}
+        row = list_template[list_template.index == i]
+        for key,val in zip(row.columns,row.values.tolist()[0]):
+            venue[key] = val
+        venues.append(venue)
+    
+    for venue in venues:
+        venue['address'] = {'street_address':venue.pop('street_address'),
+                            'city':venue.pop('city')}
 
-def get_ids(list_v,cookies,job_type):
-	'''
-	For editing: gets venue IDs from Vistar and appends them to the 
-	end of each row in the template, along with the venue index in
-	all_venues list. 
-	'''
-	all_venues = requests.get(options['url']+'/venue',cookies=cookies).json()
-	for row in list_v[1:]: 
-		for i,v in enumerate(all_venues): 
-			if v['network_id'] == row[0] and v['partner_venue_id'].lower().replace(' ','') == row[1].lower().replace(' ',''):
-				row.append(v['id']) # venue ID --> cell 15
-				row.append(i) # index of venue in all_venues --> cell 16
+    if job_type.lower() == 'c':
+        venues = add_creation_properties(venues)
 
-	return list_v,all_venues
-
-def create_venues(list_v,cookies,job_type): 
-	'''
-	Creates a list of dictionaries, via zipping of header and rows. 
-	Each dict is a venue that will be created or edited.
-	'''
-	if job_type == 'e':
-		list_v,all_venues = get_ids(list_v,cookies,job_type)
-		list_v,all_venues = edit_check(list_v,all_venues)
-
-	headers = list_v[0]
-	list_of_dicts = []
-
-	for row in list_v[1:]:
-		pairs = dict(zip(headers[0:12],row[0:12]))
-		address = dict(zip(headers[12:15],row[12:15]))
-		pairs['address'] = address
-		pairs['targetings'] = {}
-		try:
-			pairs['id'] = row[15]
-			list_of_dicts.append([pairs,row[16]])
-		except:
-			list_of_dicts.append(pairs)
-
-	if job_type == 'e':
-		for i,d in enumerate(list_of_dicts):
-			venue = get_vals_fr_vistar(d[0],d[1],all_venues)
-			list_of_dicts.pop(i)
-			list_of_dicts.insert(i,venue) #removes stored all_venue index,
-										#  since it's no longer needed	
-	else:
-		for d in list_of_dicts:
-			if d['tab_panel_id'] == '':
-				d.pop('tab_panel_id')
-		
-	for d in list_of_dicts:
-		d = final_formatting(d)
-
-	return list_of_dicts
+    return venues
 
 def read(bulk_template):
-	'''
-	Turns csv into list
-	'''
-	list_v = []
-	readable_b = csv.reader(open(bulk_template,'r'),delimiter = ',',quotechar='"')	
-	for row in readable_b:
-		list_v.append(row)
-	list_v[0].pop(2)
-	list_v[0].insert(2,'name') # edit user-friendly header to system-friendly header 
-	list_v[0].extend(['id','venue index']) # add more headers
+    list_template = pd.read_csv(bulk_template).fillna('')
+    list_template = list_template.rename(columns={'venue name':'name'})
+    list_template['partner_venue_id'].apply(str) ### in case these are
+    list_template['tab_panel_id'].apply(str) ####### numeric only; must b string
 
-	return list_v
+    return list_template
+
+def authenticate():
+    r = requests.post(options['url']+'/session/',data=json.dumps(options['cred']))
+    if r.status_code == 200:
+        cookies = r.cookies
+    else:
+        print('Problems with log-in. Please review suppl.py and try again.')
+        sys.exit()
+
+    return cookies
 
 def cli():
-	'''
-	USAGE:$ python3 venue_create_edit.py e template.csv
+    parser = argparse.ArgumentParser(description="This script creates or edits venues in bulk.")
+    parser.add_argument('job',choices=['c','C','e','E'],type=str,default=None)
+    parser.add_argument('doc',type=str,default=None)
+    args = parser.parse_args()
 
-						OR c   ----------^
-	'''
-	parser = argparse.ArgumentParser(description="This script creates or edits venues in bulk.")
-	parser.add_argument('job',choices=['c','C','e','E'],type=str,default=None)
-	parser.add_argument('doc',type=str,default=None)
-	args = parser.parse_args()
-
-	return args.job,args.doc
+    return args.job,args.doc
 
 def main():
-	job_type,bulk_template = cli()
-	r = requests.post(options['url']+'/session/',data=json.dumps(options['cred']))
-	if r.status_code == 200:
-		cookies = r.cookies
-	else:
-		print('Problems with log-in. Please review credentials and/or URL '
-				' and try again.')
-		sys.exit()
-	list_v = read(bulk_template)
-	venues_to_push = create_venues(list_v,cookies,job_type)
-	push_data(venues_to_push,cookies,job_type)
+    job_type,bulk_template = cli()
+    cookies = authenticate()
+    list_template = read(bulk_template)
+    venues = create_venues(list_template,job_type)
+    if job_type.lower() == 'e':
+        system_venues = get_system_venues(venues,cookies)
+        venues = get_vals_fr_vistar(venues,system_venues)
+    job_check(venues)
+    push_data(venues,cookies,job_type)
 
 if __name__ == "__main__":
-	main()
+    main()

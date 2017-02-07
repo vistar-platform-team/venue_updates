@@ -20,16 +20,17 @@ Once you have homebrew, run this to install python3:
 `$ brew install python3`
 
 #### 3. Install requests Module
-The script uses the python requests module. To install it, run this:
+The script uses the pandas and requests modules. To install them, run:
 
 `$ pip3 install requests`
+`$ pip3 install pandas`
 
 
 #Running the Script
 
 You run the script in your terminal. You need to be in the same directory as the script in order to run it. Steps below:
 
-1. Edit bulk upload template
+1. Edit bulk upload template. IMPORTANT: Make sure venues naming format is identical to how the venues appear in our dashboard.
 2. Save template in same folder as script and supplemental file
 3. Edit supplemental file if needed (set the url and email and password)
 4. Run:
@@ -47,7 +48,6 @@ You run the script in your terminal. You need to be in the same directory as the
 - For editing: If you attempt to edit a venue that is not yet in the system, this script will ignore it. After script has ran, it will output a .csv of venues that could not be updated.
 - Commas should be avoided when inputting number values
 - Columns A and B (Network ID and PARTNER vendor ID of venue) and required inputs in the template.
-- When entering an activation date, any format should be fine; when in doubt, just use whatever format Excel defaults to.
 
 
 

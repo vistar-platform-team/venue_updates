@@ -1,4 +1,4 @@
-# from IPython import embed
+from IPython import embed
 from suppl import options
 from time import sleep
 import sys,csv,json,requests,argparse
@@ -17,13 +17,14 @@ def push_data(venues,cookies,job_type):
 
         print('\n{0} venue {1}...\n'.format(job,v['name']))
 
-        r = requests.post(options['url']+'/venue/',cookies=cookies,data=json.dumps([v])) \
+        r = requests.post(options['url']+'/venue/',cookies=cookies,data=json.dumps([v],separators=(',', ':'))) \
             if job_type.lower() == 'c' else requests.put(options['url']+'/venue/',\
                 cookies=cookies,data=json.dumps([v]))
 
         if r.status_code == 200:
             print('Successful! HTTP response: {0}\n'.format(r.status_code)) 
         else:
+            embed()
             print('Error occurred for venue {0}, HTTP response {1}\n'.format(v['name'],r.status_code))
 
 def job_check(venues):
@@ -100,7 +101,10 @@ def add_creation_properties(venues):
         
         if venue['address']['city'] == '':
             venue['address']['city'] = None
-        
+
+        if venue['address']['street_address'] == '':
+            venue['address']['street_address'] = None
+
         venue['address']['state'] = None
         venue['address']['zip_code'] = None
 

@@ -19,7 +19,7 @@ Once you have homebrew, run this to install python3:
 
 `$ brew install python3`
 
-#### 3. Install requests Module
+#### 3. Install requests and pandas Module
 The script uses the pandas and requests modules. To install them, run:
 
 `$ pip3 install requests`
@@ -36,18 +36,22 @@ You run the script in your terminal. You need to be in the same directory as the
 4. Run:
  `$ python3 venue_create_edit.py e template.csv"`
      ---> This runs an EDIT (aka UPDATE) job
+
     or:
+
 `$ python3 venue_create_edit.py c template.csv"`
      ---> This runs a CREATION job
 
 
 #Notes:
+- The template uses row 2 to inform you which cells are required for creation. Please overwrite this row with a venue or delete it.
 - For editing: To minimize work, the user only has to fill in the values in the template that they want changed. If they don't want to change the latitude, for example, they just have to leave it blank.
 - Common causes of a 400 error: Incorrectly formatted venue; typos; unknown adjustments to the API made by devs
-- For editing: The script will display the venue names that the user wants to edit before submitting the changes, to allow exiting in case of user-error
+- The script will display the venue names that the user wants to edit before submitting the changes, to allow exiting in case of user-error
 - For editing: If you attempt to edit a venue that is not yet in the system, this script will ignore it. After script has ran, it will output a .csv of venues that could not be updated.
 - Commas should be avoided when inputting number values
 - Columns A and B (Network ID and PARTNER vendor ID of venue) and required inputs in the template.
+- Don't add columns!
 
 
 

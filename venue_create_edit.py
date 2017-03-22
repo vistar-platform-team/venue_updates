@@ -131,8 +131,8 @@ def create_venues(list_template,job_type):
 def read(bulk_template):
     list_template = pd.read_csv(bulk_template).fillna('')
     list_template = list_template.rename(columns={'venue name':'name'})
-    list_template['partner_venue_id'].apply(str) ### in case these are
-    list_template['tab_panel_id'].apply(str) ####### numeric only; must b string
+    list_template['partner_venue_id'] = list_template['partner_venue_id'].astype(str) ### in case these are
+    list_template['tab_panel_id'] = list_template['tab_panel_id'].astype(str) ####### numeric only; must b string
 
     return list_template
 

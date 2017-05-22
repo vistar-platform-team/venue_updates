@@ -34,6 +34,8 @@ You run the script in your terminal. You need to be in the same directory as the
 2. Save template in same folder as script and supplemental file
 3. Edit supplemental file if needed (set the url and email and password)
 4. Run:
+
+
  `$ python3 venue_create_edit.py e template.csv"`
      ---> This runs an EDIT (aka UPDATE) job
 
@@ -42,18 +44,19 @@ You run the script in your terminal. You need to be in the same directory as the
 `$ python3 venue_create_edit.py c template.csv"`
      ---> This runs a CREATION job
 
+    or:
+
+`$ python3 venue_create_edit.py d template.csv"`
+     ---> This runs a DELETION job
+
 
 #Notes:
+
 - The template uses row 2 to inform you which cells are required for creation. Please overwrite this row with a venue or delete it.
+- For deleting: ONLY fill in the first two columns. No other data is necessary. Before deletion is processed, a CSV will be outputted in case of accidental deletion.
 - For editing: To minimize work, the user only has to fill in the values in the template that they want changed. If they don't want to change the latitude, for example, they just have to leave it blank.
-- Common causes of a 400 error: Incorrectly formatted venue; typos; unknown adjustments to the API made by devs
-- The script will display the venue names that the user wants to edit before submitting the changes, to allow exiting in case of user-error
+- To exclude a buy type, simply fill in the appropriate cell with any value (eg. 'x'). Otherwise, leave blank.
 - For editing: If you attempt to edit a venue that is not yet in the system, this script will ignore it. After script has ran, it will output a .csv of venues that could not be updated.
 - Commas should be avoided when inputting number values
-- Columns A and B (Network ID and PARTNER vendor ID of venue) and required inputs in the template.
 - Don't add columns!
-
-
-
-
-
+- Common causes of a 400 error: Incorrectly formatted venue; typos; unknown adjustments to the API made by devs

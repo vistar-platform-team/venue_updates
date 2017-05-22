@@ -1,7 +1,9 @@
 from IPython import embed
 from suppl import options
 from time import sleep
+from datetime import timedelta,timezone
 import sys,csv,json,requests,argparse
+import dateutil.parser as parser
 import pandas as pd
 
 #USAGE: $ python3 venue_create_edit.py e template.csv
@@ -24,8 +26,8 @@ def push_data(venues,cookies,job_type):
         if r.status_code == 200:
             print('Successful! HTTP response: {0}\n'.format(r.status_code)) 
         else:
-            embed()
             print('Error occurred for venue {0}, HTTP response {1}\n'.format(v['name'],r.status_code))
+            embed()
 
 def job_check(venues):
     for venue in venues:
@@ -97,7 +99,13 @@ def get_system_venues(venues,cookies):
 def add_creation_properties(venues):
     for venue in venues:
         venue['targetings'] = {}
-        venue['activation_date'] = None
+        
+        if venue['activation_date'] != '':
+            parsed_date = parser.parse(venue['activation_date'])
+            parsed_date = parsed_date.replace(tzinfo=timezone.utc)
+            venue['activation_date'] = parsed_date.isoformat()            
+        else:
+            venue['activation_date'] = None
         
         if venue['address']['city'] == '':
             venue['address']['city'] = None
@@ -105,7 +113,9 @@ def add_creation_properties(venues):
         if venue['address']['street_address'] == '':
             venue['address']['street_address'] = None
 
-        venue['address']['state'] = None
+        if venue['address']['state'] == '':
+            venue['address']['state'] = None
+
         venue['address']['zip_code'] = None
 
     return venues
@@ -116,17 +126,67 @@ def create_venues(list_template,job_type):
         venue = {}
         row = list_template[list_template.index == i]
         for key,val in zip(row.columns,row.values.tolist()[0]):
-            venue[key] = val
+            if key == 'exclude_direct':
+                if val.strip():
+                    venue['excluded_buy_types'].append('direct')
+            elif key == 'exclude_audience':
+                if val.strip():
+                    venue['excluded_buy_types'].append('audience')
+            else:
+                venue[key] = val
         venues.append(venue)
     
     for venue in venues:
         venue['address'] = {'street_address':venue.pop('street_address'),
-                            'city':venue.pop('city')}
+                            'city':venue.pop('city'),'state':venue.pop('state')}
 
     if job_type.lower() == 'c':
         venues = add_creation_properties(venues)
 
     return venues
+
+def save_deletions_to_csv(system_venues):
+    for venue in system_venues:
+        for k,v in venue['address'].items():
+            venue[k] = v
+        venue.pop('address')
+
+    deleted_output = [[f for f in set(system_venues[0].keys())]]
+    
+    for venue in system_venues:
+        write_row = []
+        for key in set(venue.keys()):
+            write_row.append(venue[key])
+        deleted_output.append(write_row)
+
+    with open('deletions.csv','w',newline='') as csvfile:
+        new_file = csv.writer(csvfile,delimiter=',')
+        for f in deleted_output:
+            new_file.writerow(f)
+
+    print('Venues set for deletion have been saved to a .csv for backup purposes.')
+
+def delete_venues(list_template,cookies):
+    venues = []
+    
+    for row in list_template.itertuples():
+        venues.append({'partner_venue_id':row[2],'network_id':row[1]})
+    
+    system_venues = get_system_venues(venues,cookies)
+    save_deletions_to_csv(system_venues)
+
+    for venue in venues:
+        print('Deleting venue {0}'.format())
+        r = requests.delete('{0}/selling/venues/{1}'.format(options['url'],
+            venue['partner_venue_id']),cookies=cookies)
+
+        if r.status_code == 200:
+            print('Successful! HTTP response: {0}\n'.format(r.status_code)) 
+        else:
+            print('Error occurred for venue {0}, HTTP response {1}\n'.format(v['name'],r.status_code))
+            embed()
+
+    sys.exit()
 
 def read(bulk_template):
     list_template = pd.read_csv(bulk_template).fillna('')
@@ -139,16 +199,29 @@ def read(bulk_template):
 def authenticate():
     r = requests.post(options['url']+'/session/',data=json.dumps(options['cred']))
     if r.status_code == 200:
-        cookies = r.cookies
+        admin_cookies = r.cookies
     else:
         print('Problems with log-in. Please review suppl.py and try again.')
         sys.exit()
+    
+    while True:
+        print('Please type in the email login of the partner: '\
+            '(Example: dooh-partner@vistarmedia.com)')
+        options['partner']['username'] = str(input())
+        p = requests.post(options['url']+'/assume_user',cookies=r.cookies,
+            data=json.dumps(options['partner']))
 
-    return cookies
+        if p.status_code == 200:
+            partner_cookies = p.cookies
+            break
+        else:
+            print('Partner not found. Please try again or exit.')
+    
+    return admin_cookies,partner_cookies
 
 def cli():
-    parser = argparse.ArgumentParser(description="This script creates or edits venues in bulk.")
-    parser.add_argument('job',choices=['c','C','e','E'],type=str,default=None)
+    parser = argparse.ArgumentParser(description="This script creates, edits, or deletes venues in bulk.")
+    parser.add_argument('job',choices=['c','C','e','E','d','D'],type=str,default=None)
     parser.add_argument('doc',type=str,default=None)
     args = parser.parse_args()
 
@@ -156,14 +229,16 @@ def cli():
 
 def main():
     job_type,bulk_template = cli()
-    cookies = authenticate()
+    admin_cookies,partner_cookies = authenticate()
     list_template = read(bulk_template)
+    if job_type.lower() == 'd':
+        delete_venues(list_template,partner_cookies)
     venues = create_venues(list_template,job_type)
     if job_type.lower() == 'e':
-        system_venues = get_system_venues(venues,cookies)
+        system_venues = get_system_venues(venues,partner_cookies)
         venues = get_vals_fr_vistar(venues,system_venues)
     job_check(venues)
-    push_data(venues,cookies,job_type)
+    push_data(venues,partner_cookies,job_type)
 
 if __name__ == "__main__":
     main()

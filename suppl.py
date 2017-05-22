@@ -1,3 +1,4 @@
-options = {'cred':{"email":"****@vistarmedia.com",
+options = {"cred":{"email":"****",
 				"password":"****"},
-			'url':'https://****.vistarmedia.com'}
+			"url":"https://****.vistarmedia.com",
+			"partner":{"username":""}}

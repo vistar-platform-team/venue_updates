@@ -100,13 +100,6 @@ def add_creation_properties(venues):
     for venue in venues:
         venue['targetings'] = {}
         
-        if venue['activation_date'] != '':
-            parsed_date = parser.parse(venue['activation_date'])
-            parsed_date = parsed_date.replace(tzinfo=timezone.utc)
-            venue['activation_date'] = parsed_date.isoformat()            
-        else:
-            venue['activation_date'] = None
-        
         if venue['address']['city'] == '':
             venue['address']['city'] = None
 
@@ -123,7 +116,7 @@ def add_creation_properties(venues):
 def create_venues(list_template,job_type):
     venues = []
     for i in list_template.index:
-        venue = {}
+        venue = {'excluded_buy_types': []}
         row = list_template[list_template.index == i]
         for key,val in zip(row.columns,row.values.tolist()[0]):
             if key == 'exclude_direct':
@@ -139,10 +132,17 @@ def create_venues(list_template,job_type):
     for venue in venues:
         venue['address'] = {'street_address':venue.pop('street_address'),
                             'city':venue.pop('city'),'state':venue.pop('state')}
+                            
+        if venue['activation_date'] != '':          
+            parsed_date = parser.parse(venue['activation_date'])
+            parsed_date = parsed_date.replace(tzinfo=timezone.utc)
+            venue['activation_date'] = parsed_date.isoformat()            
+        else:
+            venue['activation_date'] = None
 
     if job_type.lower() == 'c':
         venues = add_creation_properties(venues)
-
+    
     return venues
 
 def save_deletions_to_csv(system_venues):
@@ -174,16 +174,16 @@ def delete_venues(list_template,cookies):
     
     system_venues = get_system_venues(venues,cookies)
     save_deletions_to_csv(system_venues)
-
+    
     for venue in venues:
-        print('Deleting venue {0}'.format())
+        print('Deleting venue {0}'.format(venue['partner_venue_id']))
         r = requests.delete('{0}/selling/venues/{1}'.format(options['url'],
             venue['partner_venue_id']),cookies=cookies)
 
-        if r.status_code == 200:
+        if r.status_code == 204:
             print('Successful! HTTP response: {0}\n'.format(r.status_code)) 
         else:
-            print('Error occurred for venue {0}, HTTP response {1}\n'.format(v['name'],r.status_code))
+            print('Error occurred for venue {0}, HTTP response {1}\n'.format(venue['partner_venue_id'],r.status_code))
             embed()
 
     sys.exit()
@@ -206,7 +206,7 @@ def authenticate():
     
     while True:
         print('Please type in the email login of the partner: '\
-            '(Example: dooh-partner@vistarmedia.com)')
+            '(Example: test-partner@vistarmedia.com)')
         options['partner']['username'] = str(input())
         p = requests.post(options['url']+'/assume_user',cookies=r.cookies,
             data=json.dumps(options['partner']))
@@ -239,6 +239,7 @@ def main():
         venues = get_vals_fr_vistar(venues,system_venues)
     job_check(venues)
     push_data(venues,partner_cookies,job_type)
+    # end_session(partner_cookies)
 
 if __name__ == "__main__":
     main()

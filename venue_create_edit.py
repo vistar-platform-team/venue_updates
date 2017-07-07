@@ -138,7 +138,7 @@ def create_venues(list_template,job_type):
             parsed_date = parsed_date.replace(tzinfo=timezone.utc)
             venue['activation_date'] = parsed_date.isoformat()            
         else:
-            venue['activation_date'] = None
+            continue
 
     if job_type.lower() == 'c':
         venues = add_creation_properties(venues)

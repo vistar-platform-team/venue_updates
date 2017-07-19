@@ -15,7 +15,7 @@ def push_data(venues,cookies,job_type):
     for v in venues:
         if 'tab_panel_id' in v.keys():
             if v['tab_panel_id'] == '':
-                v.pop('tab_panel_id')
+                v['tab_panel_id'] = None
 
         print('\n{0} venue {1}...\n'.format(job,v['name']))
 
@@ -165,7 +165,7 @@ def save_deletions_to_csv(system_venues):
             new_file.writerow(f)
 
     print('Venues set for deletion have been saved to a .csv for backup purposes.')
-
+    
 def delete_venues(list_template,cookies):
     venues = []
     
@@ -191,6 +191,7 @@ def delete_venues(list_template,cookies):
 def read(bulk_template):
     list_template = pd.read_csv(bulk_template).fillna('')
     list_template = list_template.rename(columns={'venue name':'name'})
+    list_template['name'] = list_template['name'].astype(str) ###
     list_template['partner_venue_id'] = list_template['partner_venue_id'].astype(str) ### in case these are
     list_template['tab_panel_id'] = list_template['tab_panel_id'].astype(str) ####### numeric only; must b string
 
